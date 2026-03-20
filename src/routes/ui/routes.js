@@ -1,12 +1,14 @@
-
 const express = require('express');
 const router = express.Router();
 const User = require('../../model/userModel');
 const TrainRoutModel = require("../../model/trainRoutes");
 const bookedTicketsModel = require("../../model/bookedTicketModel");
 
-router.get('/dashboard', async (req, res) => {
+router.get("/", (req, res) => {
+  res.redirect("/login");
+});
 
+router.get('/dashboard', async (req, res) => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
@@ -62,36 +64,38 @@ router.get("/bookTicket", async (req, res) => {
   const trainRoute = await TrainRoutModel.find();
   const ticketId = req.query.ticketId;
   let findTicket = null;
-  findTicket = await bookedTicketsModel.findById(ticketId);
+
+  if (ticketId) {
+    findTicket = await bookedTicketsModel.findById(ticketId);
+  }
+
   res.render("bookTicket", {
     trainRoute: trainRoute,
     showTicket: req.query.showTicket === "true",
     ticketId: req.query.ticketId || null,
     ticket: findTicket
-  })
-})
+  });
+});
 
 router.get("/bookTicketList", async (req, res) => {
-  const pnr = req.query.pnr;
   const userId = req.user.userId;
-  const ticket = await bookedTicketsModel.find({userId}).sort({ createdAt: -1 });
+  const ticket = await bookedTicketsModel.find({ userId }).sort({ createdAt: -1 });
   res.render("bookTicketList", { ticket });
-})
-
+});
 
 router.get("/bookedTicket/:id", async (req, res) => {
   const ticketId = req.params.id;
-  console.log(ticketId)
-  let findTicket = null;
-  findTicket = await bookedTicketsModel.findById(ticketId);
-  res.render("ticketPage", { ticket: findTicket })
-})
+  console.log(ticketId);
+  const findTicket = await bookedTicketsModel.findById(ticketId);
+  res.render("ticketPage", { ticket: findTicket });
+});
 
-router.get("/profile", async (req, res) =>{
+router.get("/profile", async (req, res) => {
   const user = req.user;
   console.log(user);
   const findUser = await User.findById(user.userId);
   console.log(findUser);
-  res.render("profile",{findUser});
-})
+  res.render("profile", { findUser });
+});
+
 module.exports = router;
