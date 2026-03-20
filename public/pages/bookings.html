@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - Railway Booking System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>My Bookings</h1>
+        
+        <div id="bookingsContainer" class="card-grid">
+            <!-- Bookings will appear here -->
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        auth.checkAuth();
+        renderNavbar();
+
+        async function loadBookings() {
+            try {
+                const response = await fetchWithAuth('/api/train/bookings');
+                if (response.ok) {
+                    const bookings = await response.json();
+                    displayBookings(bookings);
+                }
+            } catch (error) {
+                console.error(error);
+                showAlert('Error loading bookings', 'error');
+            }
+        }
+
+        function displayBookings(bookings) {
+            const container = document.getElementById('bookingsContainer');
+            container.innerHTML = '';
+
+            if (bookings.length === 0) {
+                container.innerHTML = '<p>No bookings found.</p>';
+                return;
+            }
+
+            bookings.forEach(booking => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>PNR: ${booking.pnr}</h3>
+                    <p><strong>Route:</strong> ${booking.fromStation} -> ${booking.toStation}</p>
+                    <p><strong>Date:</strong> ${new Date(booking.jDate).toLocaleDateString()}</p>
+                    <p><strong>Passengers:</strong> ${booking.nop}</p>
+                    <p><strong>Amount:</strong> ₹${booking.totalAmount}</p>
+                    <p><strong>Status:</strong> Booked</p>
+                    <div class="card-actions">
+                        <button onclick="cancelTicket('${booking._id}')" class="btn btn-danger">Cancel Ticket</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function cancelTicket(id) {
+            if (!confirm('Are you sure you want to cancel this ticket?')) return;
+
+            try {
+                const response = await fetchWithAuth(`/api/train/bookings/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('Ticket cancelled successfully');
+                    loadBookings(); // Reload list
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Failed to cancel');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Server error');
+            }
+        }
+
+        loadBookings();
+    </script>
+</body>
+</html>

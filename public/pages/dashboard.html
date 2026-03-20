@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Railway Booking System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="mt-2">Welcome to Railway Dashboard</h1>
+        
+        <div class="stats-grid mt-2">
+            <div class="stat-card">
+                <h2 id="totalBookings">0</h2>
+                <p>My Total Bookings</p>
+            </div>
+            <!-- Add more stats if needed -->
+             <div class="stat-card" style="background: linear-gradient(135deg, #e67e22, #d35400);">
+                <h2 id="lastBookingDate">-</h2>
+                <p>Last Journey</p>
+            </div>
+        </div>
+
+        <div class="card mt-2">
+            <h3>Quick Actions</h3>
+            <div style="display: flex; gap: 1rem;">
+                <a href="search.html" class="btn">Search Trains</a>
+                <a href="bookings.html" class="btn">My Bookings</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        auth.checkAuth();
+        renderNavbar();
+
+        async function loadDashboardStats() {
+            try {
+                // We can reuse getMyBookings to calculate stats locally for now
+                // Or create a specific dashboard API. 
+                // Let's use getMyBookings since we have it.
+                const response = await fetchWithAuth('/api/train/bookings');
+                if(response.ok) {
+                    const bookings = await response.json();
+                    document.getElementById('totalBookings').textContent = bookings.length;
+                    
+                    if(bookings.length > 0) {
+                        const lastDate = new Date(bookings[0].jDate).toLocaleDateString();
+                        document.getElementById('lastBookingDate').textContent = lastDate;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        loadDashboardStats();
+    </script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Trains - Railway Booking System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Search Available Trains</h1>
+        
+        <div class="card mt-2">
+            <form id="searchForm" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>From Station</label>
+                    <input type="text" id="fromStation" placeholder="e.g. Mumbai">
+                </div>
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>To Station</label>
+                    <input type="text" id="toStation" placeholder="e.g. Delhi">
+                </div>
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Date</label>
+                    <input type="date" id="date">
+                </div>
+                <button type="submit" class="btn">Search</button>
+            </form>
+        </div>
+
+        <div id="resultsContainer" class="card-grid">
+            <!-- Results will appear here -->
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        auth.checkAuth();
+        renderNavbar();
+
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const from = document.getElementById('fromStation').value;
+            const to = document.getElementById('toStation').value;
+            const date = document.getElementById('date').value;
+
+            const query = new URLSearchParams({ from, to, date }).toString();
+            
+            try {
+                const response = await fetchWithAuth(`/api/train/search?${query}`);
+                if (response.ok) {
+                    const trains = await response.json();
+                    displayTrains(trains);
+                }
+            } catch (error) {
+                console.error(error);
+                showAlert('Error searching trains', 'error');
+            }
+        });
+
+        function displayTrains(trains) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+
+            if (trains.length === 0) {
+                container.innerHTML = '<p>No trains found.</p>';
+                return;
+            }
+
+            trains.forEach(train => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>${train.fromStation} to ${train.toStation}</h3>
+                    <p><strong>Route ID:</strong> ${train.trainRoute}</p>
+                    <p><strong>Departure:</strong> ${new Date(train.jTime).toLocaleString()}</p>
+                    <p><strong>Distance:</strong> ${train.distance} km</p>
+                    <div class="card-actions">
+                        <button onclick="bookTrain('${train.trainRoute}')" class="btn">Book Now</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function bookTrain(trainRoute) {
+            window.location.href = `book-ticket.html?trainRoute=${trainRoute}`;
+        }
+        
+        // Load all trains initially
+        async function loadAllTrains() {
+             try {
+                const response = await fetchWithAuth(`/api/train/list`);
+                if (response.ok) {
+                    const trains = await response.json();
+                    displayTrains(trains);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+        
+        loadAllTrains();
+    </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Railway System</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="mt-2">Admin Dashboard</h1>
+        
+        <div class="stats-grid mt-2">
+            <div class="stat-card">
+                <h2 id="totalRevenue">₹0</h2>
+                <p>Total Revenue</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #27ae60, #2ecc71);">
+                <h2 id="totalBookings">0</h2>
+                <p>Total Bookings</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #8e44ad, #9b59b6);">
+                <h2 id="totalUsers">0</h2>
+                <p>Total Users</p>
+            </div>
+             <div class="stat-card" style="background: linear-gradient(135deg, #e67e22, #f39c12);">
+                <h2 id="totalTrains">0</h2>
+                <p>Active Trains</p>
+            </div>
+        </div>
+
+        <div class="card mt-2">
+            <h3>Admin Actions</h3>
+            <div style="display: flex; gap: 1rem;">
+                <a href="trains.html" class="btn">Manage Trains</a>
+                <a href="bookings.html" class="btn">View All Bookings</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/main.js"></script>
+    <script>
+        // Custom Admin Navbar
+        function renderAdminNavbar() {
+            const user = auth.getUser();
+            const navHTML = `
+                <nav class="navbar" style="background-color: #2c3e50;">
+                    <a href="dashboard.html" class="logo">Railway Admin</a>
+                    <ul class="nav-links">
+                        <li><a href="dashboard.html">Dashboard</a></li>
+                        <li><a href="trains.html">Trains</a></li>
+                        <li><a href="bookings.html">All Bookings</a></li>
+                    </ul>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span>Admin: ${user ? user.name : 'User'}</span>
+                        <button onclick="auth.logout()" class="logout-btn">Logout</button>
+                    </div>
+                </nav>
+            `;
+            document.body.insertAdjacentHTML('afterbegin', navHTML);
+        }
+
+        if (!auth.isAuthenticated() || auth.getUser().role !== 'admin') {
+            window.location.href = '../../index.html';
+        }
+
+        renderAdminNavbar();
+
+        async function loadStats() {
+            try {
+                const response = await fetchWithAuth('/api/admin/stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('totalRevenue').textContent = '₹' + stats.totalRevenue;
+                    document.getElementById('totalBookings').textContent = stats.totalBookings;
+                    document.getElementById('totalUsers').textContent = stats.totalUsers;
+                    document.getElementById('totalTrains').textContent = stats.totalTrains;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>

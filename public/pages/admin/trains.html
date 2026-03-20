@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Trains - Admin</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Manage Trains</h1>
+
+        <!-- Add Train Form -->
+        <div class="card mt-2">
+            <h3>Add New Train</h3>
+            <form id="addTrainForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label>Train Route ID</label>
+                    <input type="number" id="trainRoute" required>
+                </div>
+                <div class="form-group">
+                    <label>From Station</label>
+                    <input type="text" id="fromStation" required>
+                </div>
+                <div class="form-group">
+                    <label>To Station</label>
+                    <input type="text" id="toStation" required>
+                </div>
+                <div class="form-group">
+                    <label>Distance (km)</label>
+                    <input type="number" id="distance" required>
+                </div>
+                <div class="form-group">
+                    <label>Departure Time</label>
+                    <input type="datetime-local" id="jTime" required>
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="submit" class="btn btn-block">Add Train</button>
+                </div>
+            </form>
+        </div>
+
+        <h2 class="mt-2">Existing Trains</h2>
+        <div id="trainsContainer" class="card-grid">
+            <!-- Trains List -->
+        </div>
+    </div>
+
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/main.js"></script>
+    <script>
+        // Admin Auth Check & Navbar
+        if (!auth.isAuthenticated() || auth.getUser().role !== 'admin') {
+            window.location.href = '../../index.html';
+        }
+        
+        function renderAdminNavbar() {
+            const user = auth.getUser();
+            const navHTML = `
+                <nav class="navbar" style="background-color: #2c3e50;">
+                    <a href="dashboard.html" class="logo">Railway Admin</a>
+                    <ul class="nav-links">
+                        <li><a href="dashboard.html">Dashboard</a></li>
+                        <li><a href="trains.html">Trains</a></li>
+                        <li><a href="bookings.html">All Bookings</a></li>
+                    </ul>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span>Admin: ${user ? user.name : 'User'}</span>
+                        <button onclick="auth.logout()" class="logout-btn">Logout</button>
+                    </div>
+                </nav>
+            `;
+            document.body.insertAdjacentHTML('afterbegin', navHTML);
+        }
+        renderAdminNavbar();
+
+        // Add Train
+        document.getElementById('addTrainForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const trainData = {
+                trainRoute: document.getElementById('trainRoute').value,
+                fromStation: document.getElementById('fromStation').value,
+                toStation: document.getElementById('toStation').value,
+                distance: document.getElementById('distance').value,
+                jTime: document.getElementById('jTime').value
+            };
+
+            try {
+                const response = await fetchWithAuth('/api/admin/trains', {
+                    method: 'POST',
+                    body: JSON.stringify(trainData)
+                });
+                
+                if (response.ok) {
+                    alert('Train added successfully');
+                    document.getElementById('addTrainForm').reset();
+                    loadTrains();
+                } else {
+                    alert('Failed to add train');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        });
+
+        // Load Trains
+        async function loadTrains() {
+            try {
+                const response = await fetchWithAuth('/api/train/list');
+                const trains = await response.json();
+                const container = document.getElementById('trainsContainer');
+                container.innerHTML = '';
+
+                trains.forEach(train => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <h3>${train.fromStation} - ${train.toStation}</h3>
+                        <p>Route ID: ${train.trainRoute}</p>
+                        <p>Distance: ${train.distance} km</p>
+                        <p>Time: ${new Date(train.jTime).toLocaleString()}</p>
+                        <div class="card-actions">
+                            <button onclick="deleteTrain('${train._id}')" class="btn btn-danger">Delete</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function deleteTrain(id) {
+            if (!confirm('Delete this train?')) return;
+            try {
+                const response = await fetchWithAuth(`/api/admin/trains/${id}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    loadTrains();
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        loadTrains();
+    </script>
+</body>
+</html>

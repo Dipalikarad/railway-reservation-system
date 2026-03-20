@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Bookings - Admin</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>All Bookings</h1>
+        
+        <div class="card mt-2">
+            <div style="overflow-x: auto;">
+                <table id="bookingsTable">
+                    <thead>
+                        <tr>
+                            <th>PNR</th>
+                            <th>User ID</th>
+                            <th>Route</th>
+                            <th>Date</th>
+                            <th>Pax</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/main.js"></script>
+    <script>
+        if (!auth.isAuthenticated() || auth.getUser().role !== 'admin') {
+            window.location.href = '../../index.html';
+        }
+
+        function renderAdminNavbar() {
+            const user = auth.getUser();
+            const navHTML = `
+                <nav class="navbar" style="background-color: #2c3e50;">
+                    <a href="dashboard.html" class="logo">Railway Admin</a>
+                    <ul class="nav-links">
+                        <li><a href="dashboard.html">Dashboard</a></li>
+                        <li><a href="trains.html">Trains</a></li>
+                        <li><a href="bookings.html">All Bookings</a></li>
+                    </ul>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span>Admin: ${user ? user.name : 'User'}</span>
+                        <button onclick="auth.logout()" class="logout-btn">Logout</button>
+                    </div>
+                </nav>
+            `;
+            document.body.insertAdjacentHTML('afterbegin', navHTML);
+        }
+        renderAdminNavbar();
+
+        async function loadAllBookings() {
+            try {
+                const response = await fetchWithAuth('/api/admin/bookings');
+                const bookings = await response.json();
+                const tbody = document.querySelector('#bookingsTable tbody');
+                
+                if(bookings.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No bookings found</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = bookings.map(b => `
+                    <tr>
+                        <td>${b.pnr}</td>
+                        <td>${b.userId}</td>
+                        <td>${b.fromStation} -> ${b.toStation}</td>
+                        <td>${new Date(b.jDate).toLocaleDateString()}</td>
+                        <td>${b.nop}</td>
+                        <td>₹${b.totalAmount}</td>
+                        <td><span style="color: green; font-weight: bold;">Confirmed</span></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        loadAllBookings();
+    </script>
+</body>
+</html>

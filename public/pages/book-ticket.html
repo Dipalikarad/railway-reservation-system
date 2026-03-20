@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Ticket - Railway Booking System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Book Ticket</h1>
+        
+        <div class="form-container" style="max-width: 600px;">
+            <form id="bookingForm">
+                <input type="hidden" id="trainRoute">
+                <div class="form-group">
+                    <label>Train Route ID</label>
+                    <input type="text" id="trainRouteDisplay" disabled>
+                </div>
+                
+                <div class="form-group">
+                    <label>Journey Date</label>
+                    <input type="date" id="jDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Number of Passengers</label>
+                    <input type="number" id="nop" min="1" max="10" value="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Train Type</label>
+                    <select id="trainType">
+                        <option value="General">General</option>
+                        <option value="Express">Express</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-block">Confirm Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        auth.checkAuth();
+        renderNavbar();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const trainRouteId = urlParams.get('trainRoute');
+        
+        if (trainRouteId) {
+            document.getElementById('trainRoute').value = trainRouteId;
+            document.getElementById('trainRouteDisplay').value = trainRouteId;
+        } else {
+            alert('No train selected!');
+            window.location.href = 'search.html';
+        }
+
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bookingData = {
+                trainRoute: document.getElementById('trainRoute').value,
+                jDate: document.getElementById('jDate').value,
+                nop: document.getElementById('nop').value,
+                trainType: document.getElementById('trainType').value
+                // Note: fStation, tStation, distance, tAmount are calculated on backend in current implementation
+                // But looking at controller, it expects: { fStation, tStation, trainRoute, jDate, trainType, nop, tAmount }
+                // Wait, controller does: const findRout = await Train.findOne({ trainRoute });
+                // And then sets fromStation/toStation from it.
+                // So we might not need to send them. Let's check controller again.
+            };
+            
+            // Controller code:
+            // const { fStation, tStation, trainRoute, jDate, trainType, nop, tAmount } = req.body;
+            // const findRout = await Train.findOne({ trainRoute });
+            // const newBookTicket = new bookTicket({ fromStation: findRout.fromStation ... })
+            // So it seems it ignores fStation/tStation from body and uses findRout.
+            
+            try {
+                const response = await fetchWithAuth('/api/train/bookTicket', {
+                    method: 'POST',
+                    body: JSON.stringify(bookingData)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    alert('Booking Successful! PNR: ' + result.ticket.pnr);
+                    window.location.href = 'bookings.html';
+                } else {
+                    showAlert(result.message || 'Booking failed', 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                showAlert('Server error', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
